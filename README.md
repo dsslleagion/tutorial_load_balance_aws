@@ -70,6 +70,8 @@ docker swarm join --token SWMTKN-1-0x3gimqxscvxspokupwhutw8wspjujsud3hjd5s4wudmg
 </code>
 </pre>
 
+<p> tenha noção que os ips variam porem a porta é recomendado ter um padrão</p>
+
 <h2>Passo 2: Configurar o Balanceamento de Carga com Nginx</h2>
 
 <h3>Máquina Master</h3>
