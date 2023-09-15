@@ -18,13 +18,14 @@
 
 <pre>
 <code>
+#!/bin/bash
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 </code>
 </pre>
 
 <ol start="3">
-    <li>Abra as portas necessárias na máquina master:</li>
+    <li>Abra as portas necessárias na máquina master:(AWS apenas configure no site)</li>
 </ol>
 
 <pre>
@@ -154,6 +155,9 @@ docker service create --name site --replicas 10 -d -p 80:80 --mount type=volume,
 </code>
 </pre>
 
+<ol start="2">
+    <li>Comando que exibe aonde está localizado o arquivo index.html</li>
+</ol>
 <pre>
 <code>
 docker volume inspect app
