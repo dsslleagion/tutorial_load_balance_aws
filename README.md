@@ -154,6 +154,12 @@ docker service create --name site --replicas 10 -d -p 80:80 --mount type=volume,
 </code>
 </pre>
 
+<pre>
+<code>
+docker volume inspect app
+</code>
+</pre>
+
 <h2>Passo 4: Nas Máquinas Subsequentes</h2>
 
 <p>Execute o comando abaixo em cada máquina subsequente para ingressar no Docker Swarm:</p>
