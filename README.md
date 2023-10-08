@@ -8,6 +8,7 @@
 <h1>Configuração do Docker Swarm e Balanceamento de Carga</h1>
 
 <h2>Passo 1: Configurar o Docker Swarm</h2>
+Intervalo de portas
 
 <h3>Máquina Master</h3>
 
@@ -17,78 +18,92 @@
 </ol>
 
 <pre>
-<code>
-#!/bin/bash
-   
+<code>#!/bin/bash
 curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-</code>
+sudo sh get-docker.sh</code>
 </pre>
 
 <ol start="3">
-    <li>Abra as portas necessárias na máquina master:(AWS apenas configure no site)</li>
+    <li>Abra as portas necessárias na máquina master no site do AWS, a porta 2377 e tambem 4500 com o protocolo tcp e a origem 0.0.0.0/0 </li>
 </ol>
-
-<pre>
-<code>
-sudo ufw allow 2377/tcp
-sudo ufw allow 4500/tcp
-</code>
-</pre>
 
 <ol start="4">
-    <li>Nomeie as máquinas da seguinte forma:</li>
+    <li>Faça um Ip elástico para cada máquina, é aquele que se mantem mesmo depois que a máquina reinicia</li>
+</ol>
+
+<ol start="5">
+    <li>Nomeie a máquina master da seguinte forma:</li>
 </ol>
 
 <pre>
-<code>
-hostnamectl set-hostname master # Para a máquina master
-hostnamectl set-hostname node1  # Para a primeira máquina do balanceamento
-hostnamectl set-hostname node2  # Para a segunda máquina do balanceamento
-</code>
+<code>hostnamectl set-hostname master </code>  
 </pre>
 
-<ol start="5">
+<ol start="6">
     <li>Inicialize o Docker Swarm na máquina master:</li>
 </ol>
 
 <pre>
-<code>
-docker swarm init
-</code>
+<code>docker swarm init</code>
 </pre>
 
 <h3>Máquinas do Balanceamento</h3>
 
-<ol start="6">
+<ol start="7">
+    <li>Nomeie elas para ficar mais fácil de visualizar: </li>
+</ol>
+
+<pre>
+# Para a primeira máquina do balanceamento
+<code>hostnamectl set-hostname node1</code> 
+
+# Para a segunda máquina do balanceamento
+<code>hostnamectl set-hostname node2</code>  
+</pre>
+
+<ol start="8">
     <li>Nas máquinas do balanceamento, execute o comando gerado pelo <code>docker swarm init</code> da máquina master
         para ingressar no swarm:</li>
 </ol>
 
 <pre>
-<code>
-docker swarm join --token SWMTKN-1-0x3gimqxscvxspokupwhutw8wspjujsud3hjd5s4wudmg1er0s-boaulopoluofrimd7mknovx87
-172.31.34.172:2377
-</code>
+<code>docker swarm join --token SWMTKN-1-4htvk6294tbj63qniy4st5wwgws1b5q75qga69uk4fxr2vwzd4-131ssj1pwtg6gn0i62ptdakr3 172.31.39.216:2377</code>
 </pre>
 
-<p> tenha noção que os ips variam porem a porta é recomendado ter um padrão</p>
+<ol start="9">
+    <li>Utilize esse comando na Main para ver se todas a máquinas foram conectadas corretamente:</li>
+</ol>
+
+<pre>
+<code>docker node ls</code>
+</pre>
+
+
+<ol start="10">
+    <li>Esse comando e para exibir o token de gerenciamento após a inicialização do Swarm, você pode querer add mais máquinas:</li>
+</ol>
+
+<pre>
+<code>docker swarm join-token manager</code>
+</pre>
+
 
 <h2>Passo 2: Configurar o Balanceamento de Carga com Nginx</h2>
 
 <h3>Máquina Master</h3>
 
 <ol>
-    <li>Crie um arquivo <code>nginx.conf</code> na máquina master com o seguinte conteúdo:</li>
+    <li>Crie um arquivo <code>nginx.conf</code> no próprio usuário mesmo, na máquina master com o seguinte conteúdo:</li>
 </ol>
+<li>O primeiro Ip tem que ser a máquina  master</li>
 
 <pre>
 <code>
 http {
     upstream all {
-        server 54.82.216.122:80; // IPs das máquinas do balanceamento
-        server 54.234.46.213:80;
-        server 35.175.214.92:80;
+        server 44.213.55.202:80; 
+        server 3.234.200.81:80;
+        server 44.217.22.118:80;
     }
 
     server {
@@ -101,10 +116,12 @@ http {
 
 events {}
 </code>
+
 </pre>
 
+
 <ol start="2">
-    <li>Crie um arquivo <code>Dockerfile</code>:</li>
+    <li>Crie um arquivo no usuário <code>Dockerfile</code> com o seguinte conteúdo:</li>
 </ol>
 
 <pre>
@@ -128,11 +145,14 @@ docker build . -t proxy
     <li>Execute o serviço de balanceamento de carga:</li>
 </ol>
 
+<li><code>--restart always </code> para que o contêiner seja executado quando a máquina iniciar </li>
+
 <pre>
 <code>
-docker run --name proxy -d -p 4500:4500 proxy
+docker run --name proxy -d -p 4500:4500 proxy --restart always
 </code>
 </pre>
+
 
 <h2>Passo 3: Configurar um Volume para o Site</h2>
 
@@ -141,9 +161,7 @@ docker run --name proxy -d -p 4500:4500 proxy
 </ol>
 
 <pre>
-<code>
-docker volume create app
-</code>
+<code>docker volume create app</code>
 </pre>
 
 <ol start="2">
@@ -151,32 +169,20 @@ docker volume create app
 </ol>
 
 <pre>
-<code>
-docker service create --name site --replicas 10 -d -p 80:80 --mount type=volume,src=app,dst=/usr/local/apache2/htdocs httpd
-</code>
+<code>docker service create --name site --replicas 10 -d -p 80:80 --mount type=volume,src=app,dst=/usr/local/apache2/htdocs httpd</code>
 </pre>
 
-<ol start="2">
-    <li>Comando que exibe aonde está localizado o arquivo index.html</li>
+<ol start="3">
+    <li>Com o caminho que exibe onde está localizado o arquivo index.html, altere o html e coloque Master</li>
 </ol>
-<pre>
-<code>
-docker volume inspect app
-</code>
-</pre>
 
-<h2>Passo 4: Nas Máquinas Subsequentes</h2>
+<ol start="4">
+    <li>Agora nas máquinas do balanceamento pegue o mesmo caminho, e altere o arquivo index.html para facilitar a visualização da troca, no html coloque node 1 na primeira máquina e node 2 na segunda </li>
+</ol>
 
-<p>Execute o comando abaixo em cada máquina subsequente para ingressar no Docker Swarm:</p>
 
-<pre>
-<code>
-docker swarm join --token SWMTKN-1-0x3gimqxscvxspokupwhutw8wspjujsud3hjd5s4wudmg1er0s-boaulopoluofrimd7mknovx87
-172.31.34.172:2377
-</code>
-</pre>
+<ol start="5">
+    <li>Para visualizar basta ir para um navegador e colocar o pegar o ip da master e colocar :4500 que foi a porta definida </li>
+</ol>
 
-<p>Agora o Docker Swarm está configurado com balanceamento de carga usando Nginx e um volume para o site.</p>
 
-</body>
-</html>
