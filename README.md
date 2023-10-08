@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Configuração do Docker Swarm e Balanceamento de Carga</title>
+
 </head>
 <body>
 
